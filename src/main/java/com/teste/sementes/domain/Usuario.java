@@ -1,5 +1,6 @@
 package com.teste.sementes.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.teste.sementes.controller.UsuarioController;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +11,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,19 +19,21 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
-@NoArgsConstructor // Adicionando o construtor padrão
+@NoArgsConstructor
 @Builder
 @Entity
 public class Usuario extends AbstractEntity implements UserDetails {
 
-    private String nomeCompleto;
+    private String nomecompleto;
     @Column(unique = true)
     private String cpf;
     private String telefone;
     @Column(unique = true)
     private String usuario;
     private String senha;
-    @Enumerated(EnumType.STRING)
+    @Column(unique = true, nullable = false)
+    private String login;
+
     private Role role;
 
     //1-1
@@ -39,31 +41,41 @@ public class Usuario extends AbstractEntity implements UserDetails {
     private Endereco endereco;
 
     //1-N
-    @OneToMany(mappedBy = "usuario", orphanRemoval=true)
-    private List<Produtos> produtos = new ArrayList<>();
+    @JsonIgnore
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Produtos> produtos;
+
+    public Usuario(String login, String senha, Role role) {
+        this.login = login;
+        this.senha = senha;
+        this.role = role;
+    }
 
     @Override
     public void partialUpdate(AbstractEntity e) {
-        if (e instanceof Usuario usuario) {
-            this.nomeCompleto = usuario.nomeCompleto;
-            this.senha = usuario.senha;
-            this.usuario = usuario.telefone;
+        if (e instanceof Usuario login) {
+            this.nomecompleto = login.nomecompleto;
+            this.senha = login.senha;
+            this.telefone = login.telefone;
         }
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        if(this.role == Role.USER)
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        else
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override
     public String getPassword() {
-        return senha;
+        return this.senha; // Corrigido aqui
     }
 
     @Override
     public String getUsername() {
-        return usuario;
+        return this.login; // Corrigido aqui
     }
 
     @Override
@@ -86,10 +98,22 @@ public class Usuario extends AbstractEntity implements UserDetails {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "id=" + getId() +
+                ", nomecompleto='" + nomecompleto + '\'' +
+                ", cpf='" + cpf + '\'' +
+                ", telefone='" + telefone + '\'' +
+                ", usuario='" + usuario + '\'' +
+                ", role=" + role +
+                '}';
+    }
+
     @Data
     public static class DtoRequest {
         @NotBlank(message = "Usuário com nome em branco")
-        private String nomeCompleto;
+        private String nomecompleto;
         @NotBlank(message = "Cpf em branco")
         private String cpf;
         @NotBlank(message = "Telefone em branco")
@@ -107,7 +131,7 @@ public class Usuario extends AbstractEntity implements UserDetails {
     @EqualsAndHashCode(callSuper = true)
     @Data
     public static class DtoResponse extends RepresentationModel<DtoResponse> {
-        private String nomeCompleto;
+        private String nomecompleto;
         private String cpf;
         private String telefone;
         private String usuario;

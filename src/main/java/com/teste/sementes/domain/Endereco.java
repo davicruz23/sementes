@@ -20,7 +20,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 @NoArgsConstructor
 @Data
 @Entity
-public class Endereco extends AbstractEntity implements Serializable {
+public class Endereco extends AbstractEntity implements Serializable{
 
     String cep;
     String rua;

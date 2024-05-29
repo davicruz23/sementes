@@ -12,6 +12,8 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: update
-rsa:
-  private-key: classpath:certs/private.pem
-  public-key: classpath:certs/public.pem
+
+api:
+  security:
+    token:
+      secret: my-secret-key

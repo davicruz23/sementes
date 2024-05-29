@@ -1,11 +1,15 @@
 package com.teste.sementes.controller;
 
 import com.teste.sementes.domain.Endereco;
+import com.teste.sementes.domain.Produtos;
 import com.teste.sementes.domain.Usuario;
+import com.teste.sementes.dto.UsuarioProdutoDto;
+import com.teste.sementes.service.ProdutosService;
 import com.teste.sementes.service.UsuarioService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,19 +23,32 @@ public class UsuarioController {
 
     private final UsuarioService service;
     private final ModelMapper mapper;
+    private final ProdutosService produtosService;
 
-    public UsuarioController(UsuarioService service, ModelMapper mapper) {
+    public UsuarioController(UsuarioService service, ModelMapper mapper, ProdutosService produtosService) {
         this.service = service;
         this.mapper = mapper;
+        this.produtosService = produtosService;
+    }
+    @GetMapping("/me")
+    public ResponseEntity<Usuario> getUsuarioLogado(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof Usuario) {
+            Usuario usuario = (Usuario) authentication.getPrincipal();
+            return ResponseEntity.ok(usuario);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
     }
 
-    @GetMapping
-    public List<Usuario.DtoResponse> list() {
+
+    @GetMapping("/lista")
+    public List<UsuarioProdutoDto> list() {
         return service.list().stream()
                 .map(usuario -> {
-                    Usuario.DtoResponse response = Usuario.DtoResponse.convertToDto(usuario, mapper);
-                    response.generateLinks(usuario.getId());
-                    return response;
+                    UsuarioProdutoDto dto = new UsuarioProdutoDto();
+                    dto.setNome(usuario.getNomecompleto()); // Certifique-se de que getNomeCompleto() retorna o nome corretamente
+                    List<Produtos> produtos = produtosService.findAllByUsuarioId(usuario.getId());
+                    dto.setProdutos(produtos);
+                    return dto;
                 })
                 .collect(Collectors.toList());
     }

@@ -1,16 +1,19 @@
 package com.teste.sementes.controller;
 
-import com.teste.sementes.auth.AuthenticationResponse;
-import com.teste.sementes.auth.AuthenticationService;
-import com.teste.sementes.auth.RegisterRequest;
-import com.teste.sementes.config.LoginDTO;
+import com.teste.sementes.domain.AuthDto;
+import com.teste.sementes.domain.LoginResponseDTO;
+import com.teste.sementes.domain.RegisterDTO;
+import com.teste.sementes.domain.Usuario;
+import com.teste.sementes.infra.security.TokenService;
 import com.teste.sementes.repository.UsuarioRepository;
-import com.teste.sementes.service.TokenService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,36 +23,76 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("auth")
 public class AuthController {
 
-    private final TokenService tokenService;
-    private final AuthenticationManager authenticationManager;
-    private final AuthenticationService service;
-    private final UsuarioRepository repository;
-
     @Autowired
-    public AuthController(TokenService tokenService, AuthenticationManager authenticationManager, AuthenticationService service, UsuarioRepository repository) {
-        this.tokenService = tokenService;
-        this.authenticationManager = authenticationManager;
-        this.service = service;
-        this.repository = repository;
-    }
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private UsuarioRepository repository;
+    @Autowired
+    private TokenService tokenService;
 
     @PostMapping("/login")
-    public AuthenticationResponse token(@RequestBody LoginDTO loginDTO) {
-        System.out.println("entrou no login");
-        System.out.println(loginDTO.usuario());
-        System.out.println(repository.findByUsuario(loginDTO.usuario()).orElseThrow());
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AuthDto data) {
+        try {
+            System.out.println("Received login request for user: " + data.usuario());
 
-        authenticationManager
-                .authenticate(
-                        new UsernamePasswordAuthenticationToken(loginDTO.usuario(), loginDTO.senha())
-                );
+            // Verificação se o usuário existe
+            Usuario usuario = (Usuario) repository.findByLogin(data.usuario());
+            if (usuario == null) {
+                System.out.println("User not found: " + data.usuario());
+                return ResponseEntity.status(401).body(new LoginResponseDTO("Invalid credentials", null));
+            }
 
-        UserDetails userDetails = repository.findByUsuario(loginDTO.usuario()).orElseThrow();
-        return tokenService.generateToken(userDetails);
+            // Verificação de senha manualmente
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            if (!encoder.matches(data.senha(), usuario.getSenha())) {
+                System.out.println("Invalid password for user: " + data.usuario());
+                return ResponseEntity.status(401).body(new LoginResponseDTO("Invalid credentials", null));
+            }
+
+            System.out.println("User authenticated: " + data.usuario());
+
+            // Autenticação
+            UsernamePasswordAuthenticationToken usernamePassword =
+                    new UsernamePasswordAuthenticationToken(data.usuario(), data.senha());
+
+            Authentication auth = this.authenticationManager.authenticate(usernamePassword);
+
+            System.out.println("Generating token for user: " + data.usuario());
+            String token = tokenService.generateToken((Usuario) auth.getPrincipal());
+
+            // Retornando a resposta com token e ID do usuário
+            return ResponseEntity.ok(new LoginResponseDTO(token, usuario.getId()));
+        } catch (AuthenticationException e) {
+            System.out.println("Authentication exception: " + e.getMessage());
+            return ResponseEntity.status(401).body(new LoginResponseDTO("Invalid credentials", null));
+        } catch (Exception e) {
+            System.out.println("Unexpected exception: " + e.getMessage());
+            return ResponseEntity.status(500).body(new LoginResponseDTO("An unexpected error occurred", null));
+        }
     }
+
 
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request){
-        return ResponseEntity.ok(service.register(request));
+    public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO data) {
+        System.out.println("Received registration request for user: " + data.usuario());
+
+        if (this.repository.findByLogin(data.usuario()) != null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String encryptedPassword = new BCryptPasswordEncoder().encode(data.senha());
+        Usuario newUser = new Usuario(data.usuario(), encryptedPassword, data.role());
+        // Adicione os campos adicionais ao novo usuário
+        newUser.setNomecompleto(data.nomecompleto());
+        newUser.setCpf(data.cpf());
+        newUser.setTelefone(data.telefone());
+
+        this.repository.save(newUser);
+
+        System.out.println("User registered successfully: " + data.usuario());
+
+        return ResponseEntity.ok().build();
     }
+
+
 }
