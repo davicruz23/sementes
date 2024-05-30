@@ -1,9 +1,8 @@
-# Use a imagem oficial do OpenJDK como imagem base
-FROM openjdk:11-jre-slim
+FROM maven:3.8.5-openjdk-17 AS build
+COPY . .
+RUN mvn clean package -DskipTests
 
-# Adiciona o JAR da aplicação ao container
-ARG JAR_FILE=target/sementes-0.0.1-SNAPSHOT.jar
-COPY ${JAR_FILE} sementes-0.0.1-SNAPSHOT.jar
-
-# Define o comando padrão para executar a aplicação
-ENTRYPOINT ["java","-jar","/sementes-0.0.1-SNAPSHOT.jar"]
+FROM openjdk:17.0.1-jdk-slim
+COPY --from=build /target/sementes-0.0.1-SNAPSHOT.jar sementes.jar
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","sementes.jar"]
