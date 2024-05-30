@@ -9,7 +9,6 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: update
-
 api:
   security:
     token:
