@@ -13,4 +13,8 @@ public interface UsuarioRepository extends IGenericRepository<Usuario>, JpaRepos
     Optional<Usuario> findByUsuario(String usuario);
 
     UserDetails findByLogin(String login);
+
+    UserDetails frindByCpf(String cpf);
+
+    Usuario findByCpf(String cpf);
 }

@@ -8,6 +8,7 @@ import com.teste.sementes.infra.security.TokenService;
 import com.teste.sementes.repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -76,12 +77,20 @@ public class AuthController {
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO data) {
         System.out.println("Received registration request for user: " + data.usuario());
 
+        // Verifique se o usuário já existe pelo login
         if (this.repository.findByLogin(data.usuario()) != null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+        // Verifique se o CPF já existe
+        if (this.repository.findByCpf(data.cpf()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        // Criptografa a senha
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.senha());
         Usuario newUser = new Usuario(data.usuario(), encryptedPassword, data.role());
+
         // Adicione os campos adicionais ao novo usuário
         newUser.setNomecompleto(data.nomecompleto());
         newUser.setCpf(data.cpf());
@@ -93,6 +102,7 @@ public class AuthController {
 
         return ResponseEntity.ok().build();
     }
+
 
 
 }
