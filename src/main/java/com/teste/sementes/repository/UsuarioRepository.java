@@ -14,7 +14,5 @@ public interface UsuarioRepository extends IGenericRepository<Usuario>, JpaRepos
 
     UserDetails findByLogin(String login);
 
-    UserDetails frindByCpf(String cpf);
-
-    Usuario findByCpf(String cpf);
+    UserDetails findByCpf(String cpf);
 }
