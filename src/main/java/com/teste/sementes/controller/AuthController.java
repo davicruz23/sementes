@@ -87,6 +87,10 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+        if (this.repository.findByUsuario(String.valueOf(data.usuario() != null))){
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
         // Criptografa a senha
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.senha());
         Usuario newUser = new Usuario(data.usuario(), encryptedPassword, data.role());
