@@ -85,7 +85,7 @@ public class AuthController {
 
         // Verifique se o nome de usuário já existe
         if (this.repository.findByLogin(data.usuario()) != null) {
-            response.put("error", "Usuário já está em uso");
+            response.put("error", "Usuario já esta em uso");
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(response);
