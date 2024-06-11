@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("auth")
 public class AuthController {
@@ -74,20 +77,18 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO data) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody @Valid RegisterDTO data) {
         System.out.println("Received registration request for user: " + data.usuario());
 
-        // Verifique se o usuário já existe pelo login
+        // Verifique se o nome de usuário já existe
         if (this.repository.findByLogin(data.usuario()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Usuário já está em uso");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
 
         // Verifique se o CPF já existe
         if (this.repository.findByCpf(data.cpf()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-
-        if (this.repository.findByUsuario(String.valueOf(data.usuario() != null))){
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
