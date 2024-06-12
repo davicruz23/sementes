@@ -78,7 +78,7 @@ public class AuthController {
         System.out.println("Received registration request for user: " + data.usuario());
 
         // Verifique se o usuário já existe pelo login
-        if (this.repository.findByUsuario(data.usuario()) != null) {
+        if (this.repository.findByLogin(data.usuario()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
