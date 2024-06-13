@@ -9,6 +9,7 @@ import com.teste.sementes.repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("auth")
@@ -74,17 +78,25 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO data) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody @Valid RegisterDTO data) {
         System.out.println("Received registration request for user: " + data.usuario());
 
-        // Verifique se o usuário já existe pelo login
+        Map<String, String> response = new HashMap<>();
+
+        // Verifique se o nome de usuário já existe
         if (this.repository.findByLogin(data.usuario()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            response.put("error", "Usuário já está em uso");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response);
         }
 
         // Verifique se o CPF já existe
         if (this.repository.findByCpf(data.cpf()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            response.put("error", "CPF já está em uso");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response);
         }
 
         // Criptografa a senha
@@ -102,8 +114,5 @@ public class AuthController {
 
         return ResponseEntity.ok().build();
     }
-
-
-
 
 }
