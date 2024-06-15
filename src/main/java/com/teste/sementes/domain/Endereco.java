@@ -1,5 +1,6 @@
 package com.teste.sementes.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.teste.sementes.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,7 @@ public class Endereco extends AbstractEntity implements Serializable{
     //1-1
     @OneToOne
     @JoinColumn(name = "usuario_id")
+    @JsonBackReference
     private Usuario usuario;
 
     @Override

@@ -1,6 +1,7 @@
 package com.teste.sementes.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.teste.sementes.controller.UsuarioController;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -38,6 +39,7 @@ public class Usuario extends AbstractEntity implements UserDetails {
 
     //1-1
     @OneToOne(mappedBy = "usuario", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Endereco endereco;
 
     //1-N
